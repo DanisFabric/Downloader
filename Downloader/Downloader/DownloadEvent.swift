@@ -115,6 +115,9 @@ extension DownloadEvent {
     func resume() {
         status = .downloading
     }
+    func awake() {
+        status = .waiting
+    }
 }
 
 extension DownloadEvent {
