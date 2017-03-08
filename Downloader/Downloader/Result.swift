@@ -9,7 +9,7 @@
 import Foundation
 
 enum Result {
-    case success(String)
+    case success(URL)
     case failure(Error)
     
     var isSuccess: Bool {
