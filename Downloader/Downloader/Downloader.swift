@@ -16,7 +16,7 @@ class Downloader: NSObject {
     var maxConcurrentCount = 3
     
     lazy var session: URLSession = {
-        let configuration = URLSessionConfiguration()
+        let configuration = URLSessionConfiguration.default
         let session = URLSession(configuration: configuration)
         
         return session
@@ -26,10 +26,20 @@ class Downloader: NSObject {
     
     fileprivate override init() {
         super.init()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(onNotificationToResumeNext(_:)), name: kNotificationResumeNext, object: nil)
     }
-    
-    var numberOfEvents: Int {
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+}
+
+extension Downloader {
+    func numberOfEvents() -> Int {
         return eventPool.count
+    }
+    func event(at index: Int) -> DownloadEvent {
+        return eventPool[index]
     }
 }
 
@@ -42,7 +52,10 @@ extension Downloader {
         event.progressHandler = progress
         event.completionHandler = completion
         event.awake()
+        
         eventPool.append(event)
+        
+        NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
         
         return true
     }
@@ -87,6 +100,15 @@ extension Downloader {
         }.first
         
         next?.resume()
+    }
+    @objc fileprivate func onNotificationToResumeNext(_ notification: Notification) {
+        let downloadingEventCount = eventPool.filter { (event) -> Bool in
+            return event.status == .downloading
+        }.count
+        
+        if downloadingEventCount < maxConcurrentCount {
+            resumeNext()
+        }
     }
 }
 
