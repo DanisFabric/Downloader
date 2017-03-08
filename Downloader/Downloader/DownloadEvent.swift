@@ -152,6 +152,8 @@ extension DownloadEvent: URLSessionDataDelegate {
         }
         outputStream.open()
         error = nil
+        
+        completionHandler(.allow)
     }
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         let bytes = data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) -> UnsafePointer<UInt8> in
