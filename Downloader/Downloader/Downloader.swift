@@ -8,8 +8,10 @@
 
 import Foundation
 
+let kNotificationResumeNext = Notification.Name(rawValue: "Downloader.Notification.ResumeNext")
+
 class Downloader: NSObject {
-    var eventPool = [DownloadEvent]()
+    fileprivate var eventPool = [DownloadEvent]()
     
     var maxConcurrentCount = 3
     
@@ -24,6 +26,10 @@ class Downloader: NSObject {
     
     fileprivate override init() {
         super.init()
+    }
+    
+    var numberOfEvents: Int {
+        return eventPool.count
     }
 }
 

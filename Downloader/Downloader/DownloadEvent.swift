@@ -49,7 +49,7 @@ class DownloadEventConfiguration {
 }
 
 class DownloadEvent: NSObject {
-    var status = DownloadStatus.none {
+    fileprivate(set) var status = DownloadStatus.none {
         didSet {
             switch status {
             case .none where oldValue == .downloading:
@@ -123,6 +123,8 @@ extension DownloadEvent {
 extension DownloadEvent {
     func suspend() {
         status = .suspended
+        
+        NotificationCenter.default.post(Notification(name: kNotificationResumeNext))
     }
     func cancel() {
         status = .none
@@ -179,5 +181,6 @@ extension DownloadEvent: URLSessionDataDelegate {
             status = .completed
             completionHandler?(Result.success(sourceUrl))
         }
+        NotificationCenter.default.post(Notification(name: kNotificationResumeNext))
     }
 }
