@@ -24,8 +24,6 @@ class DownloadEventConfiguration {
     var destinationUrl: URL
     var totalBytesExpectedToWrite: Int
     
-    var completionHandler: CompletionHandler?
-    var progressHandler: ProgressHandler?
     
     init?(dictionary: [AnyHashable: Any]) {
         guard let sourceUrlString = dictionary["sourceUrl"] as? String else {
@@ -50,7 +48,7 @@ class DownloadEventConfiguration {
     }
 }
 
-class DownloadEvent {
+class DownloadEvent: NSObject {
     var status = DownloadStatus.none {
         didSet {
             switch status {
@@ -73,6 +71,9 @@ class DownloadEvent {
     let sourceUrl: URL
     let destinationUrl: URL
     
+    var completionHandler: CompletionHandler?
+    var progressHandler: ProgressHandler?
+    
     var bytesWritten = 0
     var totalBytesWritten: Int {
         return (try? FileManager.default.attributesOfItem(atPath: sourceUrl.path))?[FileAttributeKey.size] as? Int ?? 0
@@ -82,19 +83,27 @@ class DownloadEvent {
     var task: URLSessionDataTask!
     var outputStream: OutputStream!
     
+    var error: Error?
+    
     init(from source: URL, to destination: URL, session: URLSession) {
         sourceUrl = source
         destinationUrl = destination
         
+        super.init()
+        
         outputStream = OutputStream(url: destinationUrl, append: true)
+        setupTask(with: session)
     }
     init(configuration: DownloadEventConfiguration, session: URLSession) {
         sourceUrl = configuration.sourceUrl
         destinationUrl = configuration.destinationUrl
         
+        super.init()
+        
         totalBytesExpectedToWrite = configuration.totalBytesExpectedToWrite
         
         outputStream = OutputStream(url: destinationUrl, append: true)
+        setupTask(with: session)
     }
     private func setupTask(with session: URLSession) {
         var request = URLRequest(url: sourceUrl)
@@ -102,6 +111,12 @@ class DownloadEvent {
         
         task = session.dataTask(with: request)
         task.taskDescription = sourceUrl.absoluteString
+    }
+}
+
+extension DownloadEvent {
+    public static func ==(lhs: DownloadEvent, rhs: DownloadEvent) -> Bool {
+        return lhs.sourceUrl == rhs.sourceUrl
     }
 }
 
@@ -120,14 +135,49 @@ extension DownloadEvent {
     }
 }
 
-extension DownloadEvent {
-    func didReceiveResponse(_ response: HTTPURLResponse) {
-        
+extension DownloadEvent: URLSessionDataDelegate {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            return
+        }
+        guard totalBytesExpectedToWrite == 0 else {
+            return
+        }
+        if let bytesText = httpResponse.allHeaderFields["Content-Length"] as? String {
+            if let totalRestBytes = Int(bytesText) {
+                totalBytesExpectedToWrite = totalRestBytes + totalBytesWritten
+            }
+        }
+        outputStream.open()
+        error = nil
     }
-    func didReceiveData(_ data: Data) {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        let bytes = data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) -> UnsafePointer<UInt8> in
+            return bytes
+        }
+        let result = outputStream.write(bytes, maxLength: data.count)
+        if result == -1 {
+            error = outputStream.streamError
+            cancel()
+        } else {
+            bytesWritten = data.count
+        }
+        let progress = Progress(totalUnitCount: Int64(totalBytesExpectedToWrite))
+        progress.completedUnitCount = Int64(totalBytesWritten)
         
+        progressHandler?(progress)
     }
-    func didCompleteWithError(_ error: Error?) {
-        
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        outputStream.close()
+        bytesWritten = 0
+        if let error = error {
+            self.error = error
+            
+            status = .none
+            completionHandler?(Result.failure(error))
+        } else {
+            status = .completed
+            completionHandler?(Result.success(sourceUrl))
+        }
     }
 }
