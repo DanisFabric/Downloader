@@ -17,7 +17,7 @@ class Downloader: NSObject {
     
     lazy var session: URLSession = {
         let configuration = URLSessionConfiguration.default
-        let session = URLSession(configuration: configuration)
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: OperationQueue())
         
         return session
     }()
@@ -123,5 +123,22 @@ extension Downloader {
             }
         }
         return nil
+    }
+}
+
+extension Downloader: URLSessionDelegate, URLSessionDataDelegate {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        let current = event(of: URL(string: dataTask.taskDescription!)!)
+        current?.didReceiveResponse(response as! HTTPURLResponse)
+        
+        completionHandler(.allow)
+    }
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        let current = event(of: URL(string: dataTask.taskDescription!)!)
+        current?.didReceiveData(data)
+    }
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        let current = event(of: URL(string: task.taskDescription!)!)
+        current?.didCompleteWithError(error)
     }
 }

@@ -13,6 +13,8 @@ class DownloadTableViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        tableView.register(DownloadTableViewCell.self, forCellReuseIdentifier: "DownloadCell")
+        
         let destinationFolder = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true).first!
         
         for index in 0..<10 {
@@ -22,7 +24,9 @@ class DownloadTableViewController: UITableViewController {
             let dest = destinationFolder + "/video\(index).mp4"
             let destUrl = URL(fileURLWithPath: dest)
          
-            let _ = Downloader.shared.download(from: url, to: destUrl, progress: nil, completion: nil)
+            let _ = Downloader.shared.download(from: url, to: destUrl, progress: { progress in
+                print("index - \(progress.completedPercent)")
+            }, completion: nil)
         }
     }
 
@@ -38,23 +42,26 @@ class DownloadTableViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        var cell = tableView.dequeueReusableCell(withIdentifier: "DownloadCell")
-        if cell == nil {
-            cell = UITableViewCell(style: .value1, reuseIdentifier: "DownloadCell")
-        }
-        cell?.textLabel?.text = "\(indexPath.row)"
+        var cell = tableView.dequeueReusableCell(withIdentifier: "DownloadCell") as! DownloadTableViewCell
         let event = Downloader.shared.event(at: indexPath.row)
+        cell.textLabel?.text = event.sourceUrl.lastPathComponent
+        
         event.progressHandler = { progress in
-            cell?.detailTextLabel?.text = "\(Double(progress.completedUnitCount) / Double(progress.totalUnitCount))"
+            DispatchQueue.main.async {
+                cell.progressView.progress = Float(progress.completedPercent)
+            }
+            
+            print(progress.completedPercent)
         }
-        event.completionHandler = { (result) in
+        event.completionHandler = { result in
             switch result {
-            case .success(let url):
-                cell?.detailTextLabel?.text = "下载成功"
-            default:
-                cell?.detailTextLabel?.text = "下载失败"
+            case .success:
+                cell.detailTextLabel?.text = "下载成功"
+            case .failure(let error):
+                cell.detailTextLabel?.text = "下载失败"
             }
         }
-        return cell!
+
+        return cell
     }
 }

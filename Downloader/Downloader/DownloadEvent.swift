@@ -76,7 +76,7 @@ class DownloadEvent: NSObject {
     
     var bytesWritten = 0
     var totalBytesWritten: Int {
-        return (try? FileManager.default.attributesOfItem(atPath: sourceUrl.path))?[FileAttributeKey.size] as? Int ?? 0
+        return (try? FileManager.default.attributesOfItem(atPath: destinationUrl.path))?[FileAttributeKey.size] as? Int ?? 0
     }
     var totalBytesExpectedToWrite = 0
     
@@ -137,25 +137,19 @@ extension DownloadEvent {
     }
 }
 
-extension DownloadEvent: URLSessionDataDelegate {
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-        guard let httpResponse = response as? HTTPURLResponse else {
-            return
-        }
-        guard totalBytesExpectedToWrite == 0 else {
-            return
-        }
-        if let bytesText = httpResponse.allHeaderFields["Content-Length"] as? String {
-            if let totalRestBytes = Int(bytesText) {
-                totalBytesExpectedToWrite = totalRestBytes + totalBytesWritten
+extension DownloadEvent {
+    func didReceiveResponse(_ response: HTTPURLResponse) {
+        if totalBytesExpectedToWrite == 0 {
+            if let bytesText = response.allHeaderFields["Content-Length"] as? String {
+                if let totalRestBytes = Int(bytesText) {
+                    totalBytesExpectedToWrite = totalRestBytes + totalBytesWritten
+                }
             }
         }
         outputStream.open()
         error = nil
-        
-        completionHandler(.allow)
     }
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+    func didReceiveData(_ data: Data) {
         let bytes = data.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) -> UnsafePointer<UInt8> in
             return bytes
         }
@@ -171,7 +165,7 @@ extension DownloadEvent: URLSessionDataDelegate {
         
         progressHandler?(progress)
     }
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    func didCompleteWithError(_ error: Error?) {
         outputStream.close()
         bytesWritten = 0
         if let error = error {
@@ -179,6 +173,8 @@ extension DownloadEvent: URLSessionDataDelegate {
             
             status = .none
             completionHandler?(Result.failure(error))
+            
+            print("session error : \(error)")
         } else {
             status = .completed
             completionHandler?(Result.success(sourceUrl))

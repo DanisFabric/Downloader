@@ -24,3 +24,10 @@ enum Result {
         return !isSuccess
     }
 }
+
+
+extension Progress {
+    var completedPercent: Double {
+        return Double(completedUnitCount) / Double(totalUnitCount)
+    }
+}
