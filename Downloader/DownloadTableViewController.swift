@@ -9,24 +9,19 @@
 import UIKit
 
 class DownloadTableViewController: UITableViewController {
+    
+    // 暂停全部，继续全部，取消全部，添加
+    //
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         tableView.register(DownloadTableViewCell.self, forCellReuseIdentifier: "DownloadCell")
         
-        let destinationFolder = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true).first!
-        
         for index in 0..<10 {
             let sourceString = String(format: "http://120.25.226.186:32812/resources/videos/minion_%02d.mp4", index)
             let url = URL(string: sourceString)!
-            
-            let dest = destinationFolder + "/video\(index).mp4"
-            let destUrl = URL(fileURLWithPath: dest)
-         
-            let _ = Downloader.shared.download(from: url, to: destUrl, progress: { progress in
-                print("index - \(progress.completedPercent)")
-            }, completion: nil)
+            _ = Downloader.shared.download(from: url, progress: nil, completion: nil)
         }
     }
 

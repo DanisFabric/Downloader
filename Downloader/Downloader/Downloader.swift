@@ -22,6 +22,11 @@ class Downloader: NSObject {
         return session
     }()
     
+    var defaultDirectory: URL = {
+        let directory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
+        return URL(fileURLWithPath: directory)
+    }()
+    
     static let shared = Downloader()
     
     fileprivate override init() {
@@ -32,6 +37,7 @@ class Downloader: NSObject {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
+    
 }
 
 extension Downloader {
@@ -59,6 +65,13 @@ extension Downloader {
         
         return true
     }
+    func download(from source: URL, progress: ProgressHandler?, completion: CompletionHandler?) -> Bool {
+        let fileName = source.lastPathComponent
+        let destination = defaultDirectory.appendingPathComponent(fileName)
+        
+        return download(from: source, to: destination, progress: progress, completion: completion)
+    }
+    
     func remove(of url: URL) {
         cancel(of: url)
         if let event = event(of: url) {
