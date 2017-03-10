@@ -16,37 +16,10 @@ enum DownloadStatus {
     case completed
 }
 
+
 typealias CompletionHandler = ((Result) -> Void)
 typealias ProgressHandler = ((Progress) -> Void)
-
-class DownloadEventConfiguration {
-    var sourceUrl: URL
-    var destinationUrl: URL
-    var totalBytesExpectedToWrite: Int
-    
-    
-    init?(dictionary: [AnyHashable: Any]) {
-        guard let sourceUrlString = dictionary["sourceUrl"] as? String else {
-            return nil
-        }
-        guard let sourceUrl = URL(string: sourceUrlString) else {
-            return nil
-        }
-        guard let destinationUrlString = dictionary["destinationUrl"] as? String else {
-            return nil
-        }
-        guard let destinationUrl = URL(string: destinationUrlString) else {
-            return nil
-        }
-        guard let totalBytesExpectedToWrite = dictionary["totalBytes"] as? Int else {
-            return nil
-        }
-        
-        self.sourceUrl = sourceUrl
-        self.destinationUrl = destinationUrl
-        self.totalBytesExpectedToWrite = totalBytesExpectedToWrite
-    }
-}
+typealias EventConfigurationPreparedHandler = ((DownloadEventConfiguration) -> Void)
 
 class DownloadEvent: NSObject {
     fileprivate(set) var status = DownloadStatus.none {
@@ -73,6 +46,7 @@ class DownloadEvent: NSObject {
     
     var completionHandler: CompletionHandler?
     var progressHandler: ProgressHandler?
+    var preparedHandler: EventConfigurationPreparedHandler?
     
     var bytesWritten = 0
     var totalBytesWritten: Int {
@@ -90,17 +64,6 @@ class DownloadEvent: NSObject {
         destinationUrl = destination
         
         super.init()
-        
-        outputStream = OutputStream(url: destinationUrl, append: true)
-        setupTask(with: session)
-    }
-    init(configuration: DownloadEventConfiguration, session: URLSession) {
-        sourceUrl = configuration.sourceUrl
-        destinationUrl = configuration.destinationUrl
-        
-        super.init()
-        
-        totalBytesExpectedToWrite = configuration.totalBytesExpectedToWrite
         
         outputStream = OutputStream(url: destinationUrl, append: true)
         setupTask(with: session)

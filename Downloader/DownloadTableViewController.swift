@@ -41,6 +41,12 @@ class DownloadTableViewController: UITableViewController {
         let event = Downloader.shared.event(at: indexPath.row)
         cell.textLabel?.text = event.sourceUrl.lastPathComponent
         
+        if event.totalBytesExpectedToWrite != 0 {
+            cell.progressView.progress = Float(event.totalBytesWritten) / Float(event.totalBytesExpectedToWrite)
+            
+            print(event.status)
+        }
+        
         event.progressHandler = { progress in
             DispatchQueue.main.async {
                 cell.progressView.progress = Float(progress.completedPercent)

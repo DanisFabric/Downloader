@@ -37,7 +37,6 @@ class Downloader: NSObject {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
 }
 
 extension Downloader {
@@ -60,7 +59,6 @@ extension Downloader {
         event.awake()
         
         eventPool.append(event)
-        
         NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
         
         return true
@@ -111,7 +109,7 @@ extension Downloader {
         let next = eventPool.filter { (event) -> Bool in
             return event.status == .waiting
         }.first
-        
+        print("resumeNext")
         next?.resume()
     }
     @objc fileprivate func onNotificationToResumeNext(_ notification: Notification) {
