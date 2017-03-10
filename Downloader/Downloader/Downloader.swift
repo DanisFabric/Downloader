@@ -1,4 +1,5 @@
 //
+
 //  Downloader.swift
 //  Downloader
 //
@@ -29,10 +30,33 @@ class Downloader: NSObject {
     
     static let shared = Downloader()
     
+    fileprivate let database = EventDatabase()
+    
     fileprivate override init() {
         super.init()
         
         NotificationCenter.default.addObserver(self, selector: #selector(onNotificationToResumeNext(_:)), name: kNotificationResumeNext, object: nil)
+        
+        func recovery() {
+            let datas = database.dataPool
+            for data in datas {
+                data.destination = defaultDirectory.appendingPathComponent(data.destination.lastPathComponent)
+                let event = DownloadEvent(data: data, session: session)
+                
+                eventPool.append(event)
+            }
+            let recoveryEvents = eventPool.filter { (event) -> Bool in
+                return event.isRecoveryImmediately
+            }
+            recoveryEvents.forEach { (event) in
+                event.resume()
+            }
+            let resumeOtherCount = max(maxConcurrentCount - recoveryEvents.count, 0)
+            for _ in 0..<resumeOtherCount {
+                NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
+            }
+        }
+        recovery()
     }
     deinit {
         NotificationCenter.default.removeObserver(self)
@@ -56,10 +80,18 @@ extension Downloader {
         let event = DownloadEvent(from: source, to: destination, session: session)
         event.progressHandler = progress
         event.completionHandler = completion
+        event.preparedHandler = { [weak self] in
+            self?.database.update(data: event.data)
+        }
+        event.statusChangedHandler = { [weak self] in
+            self?.database.update(data: event.data)
+        }
         event.awake()
         
         eventPool.append(event)
         NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
+        
+        database.add(data: event.data)
         
         return true
     }

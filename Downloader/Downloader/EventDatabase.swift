@@ -14,17 +14,18 @@ class EventData {
     var status: DownloadStatus = .none
     var totalBytes: Int = 0
     
-    init(source: URL, destination: URL, status: DownloadStatus) {
+    init(source: URL, destination: URL, status: DownloadStatus, totalBytes: Int) {
         self.source = source
         self.destination = destination
         self.status = status
+        self.totalBytes = totalBytes
     }
     
     init?(dictionary: [String: Any]) {
         guard let source = URL(string: (dictionary["source"] as? String) ?? "") else {
             return nil
         }
-        guard let destination = URL(string: (dictionary["destination"] as? String) ?? "") else {
+        guard let destinationPath = dictionary["destination"] as? String else {
             return nil
         }
         if let status = DownloadStatus(rawValue: (dictionary["statusRaw"] as? Int) ?? 0) {
@@ -34,17 +35,17 @@ class EventData {
             self.totalBytes = totalBytes
         }
         self.source = source
-        self.destination = destination
+        self.destination = URL(fileURLWithPath: destinationPath)
         
     }
     
     var dictionary: [String: Any] {
-        return ["source": source.absoluteString, "destination": destination.absoluteString, "statusRaw": status.rawValue, "totalBytes": totalBytes]
+        return ["source": source.absoluteString, "destination": destination.path, "statusRaw": status.rawValue, "totalBytes": totalBytes]
     }
 }
 
 class EventDatabase {
-    var dataPool = [EventData]()
+    fileprivate(set) var dataPool = [EventData]()
     
     fileprivate let filePath: String = NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true).first!.appending("/events.plist")
     
@@ -94,7 +95,7 @@ extension EventDatabase {
         }
         return nil
     }
-    func readAll() -> [EventData] {
+    fileprivate func readAll() -> [EventData] {
         var datas = [EventData]()
         if let values = NSArray(contentsOfFile: filePath) {
             for value in values {
@@ -113,6 +114,8 @@ extension EventDatabase {
         for data in dataPool {
             dicts.add(data.dictionary)
         }
+        print(dicts)
         dicts.write(toFile: filePath, atomically: true)
     }
 }
+

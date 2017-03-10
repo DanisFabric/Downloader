@@ -19,7 +19,8 @@ enum DownloadStatus: Int {
 
 typealias CompletionHandler = ((Result) -> Void)
 typealias ProgressHandler = ((Progress) -> Void)
-typealias EventConfigurationPreparedHandler = ((DownloadEventConfiguration) -> Void)
+typealias EventPreparedHandler = (() -> Void)
+typealias EventStatusChangedHandler = (() -> Void)
 
 class DownloadEvent: NSObject {
     fileprivate(set) var status = DownloadStatus.none {
@@ -38,6 +39,9 @@ class DownloadEvent: NSObject {
             default:
                 break
             }
+            if oldValue != status {
+                statusChangedHandler?()
+            }
         }
     }
     
@@ -46,7 +50,8 @@ class DownloadEvent: NSObject {
     
     var completionHandler: CompletionHandler?
     var progressHandler: ProgressHandler?
-    var preparedHandler: EventConfigurationPreparedHandler?
+    var preparedHandler: EventPreparedHandler?
+    var statusChangedHandler: EventStatusChangedHandler?
     
     var bytesWritten = 0
     var totalBytesWritten: Int {
@@ -58,6 +63,8 @@ class DownloadEvent: NSObject {
     var outputStream: OutputStream!
     
     var error: Error?
+    
+    var isRecoveryImmediately = false
     
     init(from source: URL, to destination: URL, session: URLSession) {
         sourceUrl = source
@@ -74,6 +81,30 @@ class DownloadEvent: NSObject {
         
         task = session.dataTask(with: request)
         task.taskDescription = sourceUrl.absoluteString
+    }
+    convenience init(data: EventData, session: URLSession) {
+        self.init(from: data.source, to: data.destination, session: session)
+        
+        totalBytesExpectedToWrite = data.totalBytes
+        
+        switch data.status {
+        case .waiting:
+            status = .waiting
+        case .downloading:
+            status = .waiting
+            isRecoveryImmediately = true
+        default:
+            break
+        }
+        if totalBytesExpectedToWrite == totalBytesWritten && totalBytesExpectedToWrite != 0 {
+            status = .completed
+            isRecoveryImmediately = false
+        }
+        
+        print("\(status) - \(totalBytesExpectedToWrite) - \(totalBytesWritten)")
+    }
+    var data: EventData {
+        return EventData(source: sourceUrl, destination: destinationUrl, status: status, totalBytes: totalBytesExpectedToWrite)
     }
 }
 
@@ -106,9 +137,12 @@ extension DownloadEvent {
             if let bytesText = response.allHeaderFields["Content-Length"] as? String {
                 if let totalRestBytes = Int(bytesText) {
                     totalBytesExpectedToWrite = totalRestBytes + totalBytesWritten
+                    
+                    preparedHandler?()
                 }
             }
         }
+        
         outputStream.open()
         error = nil
     }
@@ -123,6 +157,7 @@ extension DownloadEvent {
         } else {
             bytesWritten = data.count
         }
+        
         let progress = Progress(totalUnitCount: Int64(totalBytesExpectedToWrite))
         progress.completedUnitCount = Int64(totalBytesWritten)
         

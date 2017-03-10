@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		001F49961E713247008FF98E /* EventLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001F49951E713247008FF98E /* EventLoader.swift */; };
 		0076C85F1E6E8B7D00F8D4EB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0076C85E1E6E8B7D00F8D4EB /* AppDelegate.swift */; };
 		0076C8641E6E8B7D00F8D4EB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0076C8621E6E8B7D00F8D4EB /* Main.storyboard */; };
 		0076C8661E6E8B7D00F8D4EB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0076C8651E6E8B7D00F8D4EB /* Assets.xcassets */; };
@@ -21,7 +20,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		001F49951E713247008FF98E /* EventLoader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EventLoader.swift; sourceTree = "<group>"; };
 		0076C85B1E6E8B7D00F8D4EB /* Downloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Downloader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0076C85E1E6E8B7D00F8D4EB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0076C8631E6E8B7D00F8D4EB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -83,7 +81,6 @@
 			children = (
 				0076C8711E6E8BB200F8D4EB /* DownloadEvent.swift */,
 				0076C8731E6E986200F8D4EB /* Downloader.swift */,
-				001F49951E713247008FF98E /* EventLoader.swift */,
 				0076C8751E6E98B800F8D4EB /* Result.swift */,
 				00AC8EC71E72822B00FC262B /* EventDatabase.swift */,
 			);
@@ -169,7 +166,6 @@
 				00E5FE5E1E6FB73100E0B634 /* DownloadTableViewController.swift in Sources */,
 				00AC8EC81E72822B00FC262B /* EventDatabase.swift in Sources */,
 				00E5FE601E6FB93F00E0B634 /* DownloadTableViewCell.swift in Sources */,
-				001F49961E713247008FF98E /* EventLoader.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,7 +288,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = Downloader/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.danis.Downloader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -304,7 +302,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = Downloader/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.danis.Downloader;
 				PRODUCT_NAME = "$(TARGET_NAME)";

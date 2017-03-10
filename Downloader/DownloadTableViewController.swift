@@ -43,8 +43,6 @@ class DownloadTableViewController: UITableViewController {
         
         if event.totalBytesExpectedToWrite != 0 {
             cell.progressView.progress = Float(event.totalBytesWritten) / Float(event.totalBytesExpectedToWrite)
-            
-            print(event.status)
         }
         
         event.progressHandler = { progress in
