@@ -109,7 +109,6 @@ extension Downloader {
         let next = eventPool.filter { (event) -> Bool in
             return event.status == .waiting
         }.first
-        print("resumeNext")
         next?.resume()
     }
     @objc fileprivate func onNotificationToResumeNext(_ notification: Notification) {

@@ -18,11 +18,11 @@ class DownloadTableViewController: UITableViewController {
 
         tableView.register(DownloadTableViewCell.self, forCellReuseIdentifier: "DownloadCell")
         
-        for index in 0..<10 {
-            let sourceString = String(format: "http://120.25.226.186:32812/resources/videos/minion_%02d.mp4", index)
-            let url = URL(string: sourceString)!
-            _ = Downloader.shared.download(from: url, progress: nil, completion: nil)
-        }
+//        for index in 0..<10 {
+//            let sourceString = String(format: "http://120.25.226.186:32812/resources/videos/minion_%02d.mp4", index)
+//            let url = URL(string: sourceString)!
+//            _ = Downloader.shared.download(from: url, progress: nil, completion: nil)
+//        }
     }
 
     // MARK: - Table view data source

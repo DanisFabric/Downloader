@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum DownloadStatus {
+enum DownloadStatus: Int {
     case none
     case waiting
     case downloading
