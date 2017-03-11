@@ -9,8 +9,6 @@
 
 import Foundation
 
-let kNotificationResumeNext = Notification.Name(rawValue: "Downloader.Notification.ResumeNext")
-
 class Downloader: NSObject {
     fileprivate var eventPool = [DownloadEvent]()
     
@@ -32,15 +30,15 @@ class Downloader: NSObject {
     
     fileprivate let database = EventDatabase()
     
+    var dispatchTimer: Timer!
+    
     fileprivate override init() {
         super.init()
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(onNotificationToResumeNext(_:)), name: kNotificationResumeNext, object: nil)
         
         func recovery() {
             let datas = database.dataPool
             for data in datas {
-                data.destination = defaultDirectory.appendingPathComponent(data.destination.lastPathComponent)
+                data.destination = defaultDirectory.appendingPathComponent(data.destination.lastPathComponent)      // iOS8之后苹果会改变沙盒地址改变
                 let event = DownloadEvent(data: data, session: session)
                 event.preparedHandler = { [weak self] in
                     self?.database.update(data: event.data)
@@ -55,17 +53,17 @@ class Downloader: NSObject {
                 return event.isRecoveryImmediately
             }
             recoveryEvents.forEach { (event) in
+                event.isRecoveryImmediately = false
                 event.resume()
-            }
-            let resumeOtherCount = max(maxConcurrentCount - recoveryEvents.count, 0)
-            for _ in 0..<resumeOtherCount {
-                NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
             }
         }
         recovery()
+        
+        dispatchTimer = Timer(timeInterval: 1, target: self, selector: #selector(onTimerToDispatchEvent), userInfo: nil, repeats: true)
+        RunLoop.current.add(dispatchTimer, forMode: .commonModes)
     }
     deinit {
-        NotificationCenter.default.removeObserver(self)
+        dispatchTimer.invalidate()
     }
 }
 
@@ -95,7 +93,6 @@ extension Downloader {
         event.awake()
         
         eventPool.append(event)
-        NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
         
         database.add(data: event.data)
         
@@ -130,17 +127,17 @@ extension Downloader {
     }
     func cancelAll() {
         eventPool.forEach { (event) in
-            cancel(of: event.sourceUrl)
+            event.cancel()
         }
     }
     func suspendAll() {
         eventPool.forEach { (event) in
-            suspend(of: event.sourceUrl)
+            event.suspend()
         }
     }
     func awakeAll() {
         eventPool.forEach { (event) in
-            awake(of: event.sourceUrl)
+            event.awake()
         }
     }
     fileprivate func resumeNext() {
@@ -148,15 +145,6 @@ extension Downloader {
             return event.status == .waiting
         }.first
         next?.resume()
-    }
-    @objc fileprivate func onNotificationToResumeNext(_ notification: Notification) {
-        let downloadingEventCount = eventPool.filter { (event) -> Bool in
-            return event.status == .downloading
-        }.count
-        
-        if downloadingEventCount < maxConcurrentCount {
-            resumeNext()
-        }
     }
 }
 
@@ -188,5 +176,16 @@ extension Downloader: URLSessionDelegate, URLSessionDataDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let current = event(of: URL(string: task.taskDescription!)!)
         current?.didCompleteWithError(error)
+    }
+}
+
+extension Downloader {
+    @objc fileprivate func onTimerToDispatchEvent() {
+        let downloadingCount = eventPool.filter { (event) -> Bool in
+            return event.status == .downloading
+        }.count
+        for _ in 0..<max(0, maxConcurrentCount - downloadingCount) {
+            resumeNext()
+        }
     }
 }

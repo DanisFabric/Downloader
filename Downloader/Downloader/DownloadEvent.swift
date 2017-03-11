@@ -123,9 +123,7 @@ extension DownloadEvent {
 
 extension DownloadEvent {
     func suspend() {
-        status = .suspended
-        
-        NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
+        status = .suspended        
     }
     func cancel() {
         status = .none
@@ -184,6 +182,5 @@ extension DownloadEvent {
             status = .completed
             completionHandler?(Result.success(sourceUrl))
         }
-        NotificationCenter.default.post(name: kNotificationResumeNext, object: nil)
     }
 }
