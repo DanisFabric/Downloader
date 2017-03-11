@@ -42,6 +42,12 @@ class Downloader: NSObject {
             for data in datas {
                 data.destination = defaultDirectory.appendingPathComponent(data.destination.lastPathComponent)
                 let event = DownloadEvent(data: data, session: session)
+                event.preparedHandler = { [weak self] in
+                    self?.database.update(data: event.data)
+                }
+                event.statusChangedHandler = { [weak self] in
+                    self?.database.update(data: event.data)
+                }
                 
                 eventPool.append(event)
             }

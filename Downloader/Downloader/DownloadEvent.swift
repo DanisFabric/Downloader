@@ -55,7 +55,15 @@ class DownloadEvent: NSObject {
     
     var bytesWritten = 0
     var totalBytesWritten: Int {
-        return (try? FileManager.default.attributesOfItem(atPath: destinationUrl.path))?[FileAttributeKey.size] as? Int ?? 0
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: destinationUrl.path)
+            if let size = attributes[FileAttributeKey.size] as? Int {
+                return size
+            }
+        } catch let error {
+            print(error)
+        }
+        return 0
     }
     var totalBytesExpectedToWrite = 0
     
@@ -100,7 +108,6 @@ class DownloadEvent: NSObject {
             status = .completed
             isRecoveryImmediately = false
         }
-        
         print("\(status) - \(totalBytesExpectedToWrite) - \(totalBytesWritten)")
     }
     var data: EventData {
